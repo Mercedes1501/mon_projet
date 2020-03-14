@@ -44,4 +44,37 @@ def review_to_words(raw_review):
     # 6. Join the words back into one string separated by space,
     # and return the result.
     return(" ".join(lemmatized_word))
+
+
+
+def predict_tags_sup(question):
     
+    # Review du test
+    question_review = review_to_words(question)
+    
+    question_review = [question_review]
+    
+    #Passage en countvecto
+    question_c = count.transform(question_review)
+    question_carray = question_c.toarray()
+    
+    # Now predict this with the model
+    lda_question = model_lda.transform(question_carray)
+    Docs_mots_question = lda_question.dot(model_lda.components_)
+    
+    #Transformation en dataframe
+    docnames_q = ["Doc" + str(i) for i in range(len(question_carray))]
+    Docs_mots_q = pd.DataFrame(Docs_mots_question, columns=count.get_feature_names(), index=docnames_q)
+    
+    # Prédiction
+    nlargest = 5
+    order = np.argsort(-Docs_mots_q.values, axis=1)[:, :nlargest]
+    
+    result = pd.DataFrame(Docs_mots_q.columns[order], 
+                      columns=['top{}'.format(i) for i in range(1, nlargest+1)],
+                      index=Docs_mots_q.index)
+    
+    my_list = result.to_numpy().tolist()
+    
+    print('Les tags proposés sont: ', my_list)
+    return my_list
